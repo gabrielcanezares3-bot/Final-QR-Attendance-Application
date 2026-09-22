@@ -10,12 +10,13 @@ import {
   ActivityIndicator,
   Pressable,
 } from 'react-native';
-import { Link, useRouter } from 'expo-router';
+import { Link } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import AmbientBackground from '@/components/AmbientBackground';
 import AppButton from '@/components/AppButton';
 import Header from '@/components/Header';
-import { COLORS } from '@/constants/colors';
+import { COLORS, RADIUS, SPACE } from '@/constants/colors';
 import { signUp } from '@/lib/auth';
 
 export default function RegisterScreen() {
@@ -70,7 +71,10 @@ export default function RegisterScreen() {
 
       if (authError) {
         setError(authError.message);
-      } else if (!data.session) {
+      } else if (data.session) {
+        // Email confirmation disabled or already confirmed - session exists
+      } else {
+        // Email confirmation enabled - no session yet
         setSuccess(true);
       }
     } catch (err) {
@@ -84,24 +88,24 @@ export default function RegisterScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      <AmbientBackground variant="compact" />
+
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
         <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.headerContainer}>
-              <Header title="QR Attendance" />
-            </View>
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.headerContainer}>
+            <Header title="QR Attendance" />
+          </View>
 
-            <Text style={styles.title}>
-              Create Account
-            </Text>
-
+          <View style={styles.formCard}>
+            <Text style={styles.title}>Create Account</Text>
             <Text style={styles.subtitle}>
               Register to start recording attendance
             </Text>
@@ -145,6 +149,8 @@ export default function RegisterScreen() {
 
                 <View style={styles.roleRow}>
                   <Pressable
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: role === 'student' }}
                     style={[
                       styles.roleChip,
                       role === 'student' &&
@@ -165,8 +171,11 @@ export default function RegisterScreen() {
                   </Pressable>
 
                   <Pressable
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: role === 'teacher' }}
                     style={[
                       styles.roleChip,
+                      styles.roleChipLast,
                       role === 'teacher' &&
                         styles.roleChipActive,
                     ]}
@@ -235,17 +244,20 @@ export default function RegisterScreen() {
                 />
 
                 {error && (
-                  <Text style={styles.error}>
-                    {error}
-                  </Text>
+                  <View style={styles.errorBox}>
+                    <Text style={styles.error}>
+                      {error}
+                    </Text>
+                  </View>
                 )}
 
                 {loading ? (
-                  <ActivityIndicator
-                    size="large"
-                    color={COLORS.primary}
-                    style={styles.loader}
-                  />
+                  <View style={styles.loader}>
+                    <ActivityIndicator
+                      size="small"
+                      color={COLORS.primary}
+                    />
+                  </View>
                 ) : (
                   <AppButton
                     theme="primary"
@@ -256,14 +268,15 @@ export default function RegisterScreen() {
                 )}
               </View>
             )}
+          </View>
 
-            {!success && (
-              <Link href="/login" style={styles.link}>
-                Already have an account? Sign In
-              </Link>
-            )}
-          </ScrollView>
-        </KeyboardAvoidingView>
+          {!success && (
+            <Link href="/login" style={styles.link}>
+              Already have an account? Sign In
+            </Link>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
@@ -278,106 +291,145 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingBottom: 24,
+    paddingHorizontal: SPACE.lg,
+    paddingBottom: SPACE.lg,
   },
   headerContainer: {
     alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 75,
+    marginTop: SPACE.sm,
+    marginBottom: SPACE.lg,
+  },
+  formCard: {
+    width: '100%',
+    maxWidth: 520,
+    alignSelf: 'center',
+    padding: SPACE.lg,
+    borderRadius: RADIUS.lg,
+    backgroundColor: COLORS.glass,
+    borderWidth: 1,
+    borderColor: COLORS.glassBorder,
+    elevation: 4,
   },
   title: {
-    fontSize: 26,
-    fontWeight: '700',
+    fontSize: 27,
+    fontWeight: '800',
     color: COLORS.textPrimary,
-    marginBottom: 2,
+    marginBottom: SPACE.xs,
+    textAlign: 'center',
+    letterSpacing: -0.4,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 15,
     color: COLORS.textSecondary,
-    lineHeight: 20,
-    marginBottom: 16,
+    lineHeight: 22,
+    marginBottom: SPACE.md,
+    textAlign: 'center',
   },
   form: {
-    marginBottom: 16,
-    gap: 8,
+    width: '100%',
+    gap: SPACE.xs,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '800',
     color: COLORS.textPrimary,
-    marginBottom: -4,
+    marginTop: SPACE.sm,
+    letterSpacing: 0.2,
   },
   input: {
-    backgroundColor: COLORS.card,
-    borderRadius: 10,
+    minHeight: 54,
+    backgroundColor: COLORS.glassStrong,
+    borderRadius: RADIUS.md,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    fontSize: 15,
+    borderColor: COLORS.glassBorder,
+    paddingHorizontal: SPACE.md,
+    paddingVertical: 14,
+    fontSize: 16,
     color: COLORS.textPrimary,
   },
   roleRow: {
     flexDirection: 'row',
+    marginTop: SPACE.xs,
   },
   roleChip: {
     flex: 1,
-    backgroundColor: COLORS.card,
-    borderRadius: 10,
+    minHeight: 50,
+    backgroundColor: COLORS.glassStrong,
+    borderRadius: RADIUS.sm,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    paddingVertical: 10,
+    borderColor: COLORS.glassBorder,
+    paddingHorizontal: SPACE.md,
+    paddingVertical: SPACE.sm,
     alignItems: 'center',
-    marginRight: 8,
+    justifyContent: 'center',
+    marginRight: SPACE.sm,
+  },
+  roleChipLast: {
+    marginRight: 0,
   },
   roleChipActive: {
     borderColor: COLORS.primary,
-    backgroundColor: COLORS.primary + '14',
+    backgroundColor: COLORS.primaryTint,
   },
   roleChipText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '700',
     color: COLORS.textPrimary,
   },
   roleChipTextActive: {
-    color: COLORS.primary,
-    fontWeight: '700',
+    color: COLORS.primarySoft,
+    fontWeight: '800',
+  },
+  errorBox: {
+    marginTop: SPACE.md,
+    paddingHorizontal: SPACE.md,
+    paddingVertical: SPACE.sm,
+    borderRadius: RADIUS.sm,
+    backgroundColor: 'rgba(232,93,125,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(232,93,125,0.20)',
   },
   error: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.danger,
-    textAlign: 'left',
-    marginTop: 2,
+    lineHeight: 19,
   },
   loader: {
-    marginVertical: 12,
+    minHeight: 54,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: SPACE.md,
   },
   link: {
+    width: '100%',
+    maxWidth: 520,
+    alignSelf: 'center',
     fontSize: 14,
-    color: COLORS.primary,
+    color: COLORS.primarySoft,
     textAlign: 'center',
-    fontWeight: '600',
+    fontWeight: '800',
+    marginTop: SPACE.lg,
+    paddingVertical: SPACE.sm,
   },
   successContainer: {
-    marginBottom: 20,
-    padding: 16,
-    backgroundColor: COLORS.card,
+    padding: SPACE.md,
+    backgroundColor: COLORS.glassStrong,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 10,
+    borderColor: COLORS.glassBorder,
+    borderRadius: RADIUS.md,
   },
   successTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 20,
+    fontWeight: '800',
     color: COLORS.textPrimary,
-    marginBottom: 6,
+    marginBottom: SPACE.sm,
+    textAlign: 'center',
   },
   successText: {
     fontSize: 14,
     color: COLORS.textSecondary,
     textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 12,
+    lineHeight: 21,
+    marginBottom: SPACE.sm,
   },
 });

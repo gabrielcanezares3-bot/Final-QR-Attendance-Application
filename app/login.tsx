@@ -12,9 +12,10 @@ import {
 import { Link, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import AmbientBackground from '@/components/AmbientBackground';
 import AppButton from '@/components/AppButton';
 import Header from '@/components/Header';
-import { COLORS } from '@/constants/colors';
+import { COLORS, RADIUS, SPACE } from '@/constants/colors';
 import { signIn, useAuth } from '@/lib/auth';
 
 export default function LoginScreen() {
@@ -51,20 +52,23 @@ export default function LoginScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      <AmbientBackground variant="compact" />
+
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
         <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.headerContainer}>
-              <Header title="QR Attendance" />
-            </View>
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.headerContainer}>
+            <Header title="QR Attendance" />
+          </View>
 
+          <View style={styles.formCard}>
             <Text style={styles.title}>Welcome Back</Text>
             <Text style={styles.subtitle}>Sign in to record your attendance</Text>
 
@@ -92,10 +96,16 @@ export default function LoginScreen() {
                 editable={!loading}
               />
 
-              {error && <Text style={styles.error}>{error}</Text>}
+              {error && (
+                <View style={styles.errorBox}>
+                  <Text style={styles.error}>{error}</Text>
+                </View>
+              )}
 
               {loading ? (
-                <ActivityIndicator size="large" color={COLORS.primary} style={styles.loader} />
+                <View style={styles.loader}>
+                  <ActivityIndicator size="small" color={COLORS.primary} />
+                </View>
               ) : (
                 <AppButton
                   theme="primary"
@@ -105,11 +115,12 @@ export default function LoginScreen() {
                 />
               )}
             </View>
+          </View>
 
-            <Link href="/register" style={styles.link}>
-              Don't have an account? Sign Up
-            </Link>
-          </ScrollView>
+          <Link href="/register" style={styles.link}>
+            Don't have an account? Sign Up
+          </Link>
+        </ScrollView>
       </KeyboardAvoidingView>
     </View>
   );
@@ -125,64 +136,91 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingBottom: 24,
+    paddingHorizontal: SPACE.lg,
+    paddingBottom: SPACE.lg,
   },
   headerContainer: {
     alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 100,
+    marginTop: SPACE.sm,
+    marginBottom: SPACE.lg,
+  },
+  formCard: {
+    width: '100%',
+    maxWidth: 520,
+    alignSelf: 'center',
+    padding: SPACE.lg,
+    borderRadius: RADIUS.lg,
+    backgroundColor: COLORS.glass,
+    borderWidth: 1,
+    borderColor: COLORS.glassBorder,
+    elevation: 4,
   },
   title: {
-    fontSize: 26,
-    fontWeight: '700',
+    fontSize: 27,
+    fontWeight: '800',
     color: COLORS.textPrimary,
-    marginBottom: 2,
+    marginBottom: SPACE.xs,
     textAlign: 'center',
+    letterSpacing: -0.4,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 15,
     color: COLORS.textSecondary,
-    lineHeight: 20,
-    marginBottom: 16,
+    lineHeight: 22,
+    marginBottom: SPACE.lg,
     textAlign: 'center',
   },
   form: {
-    marginBottom: 12,
+    width: '100%',
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '800',
     color: COLORS.textPrimary,
-    marginBottom: 4,
-    marginTop: 4,
+    marginBottom: SPACE.xs,
+    marginTop: SPACE.sm,
+    letterSpacing: 0.2,
   },
   input: {
-    backgroundColor: COLORS.card,
-    borderRadius: 10,
+    minHeight: 54,
+    backgroundColor: COLORS.glassStrong,
+    borderRadius: RADIUS.md,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    fontSize: 15,
+    borderColor: COLORS.glassBorder,
+    paddingHorizontal: SPACE.md,
+    paddingVertical: 14,
+    fontSize: 16,
     color: COLORS.textPrimary,
-    marginBottom: 8,
+  },
+  errorBox: {
+    marginTop: SPACE.md,
+    paddingHorizontal: SPACE.md,
+    paddingVertical: SPACE.sm,
+    borderRadius: RADIUS.sm,
+    backgroundColor: 'rgba(232,93,125,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(232,93,125,0.20)',
   },
   error: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.danger,
-    textAlign: 'left',
-    marginTop: 2,
-    marginBottom: 8,
+    lineHeight: 19,
   },
   loader: {
-    marginVertical: 12,
+    minHeight: 54,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: SPACE.lg,
   },
   link: {
+    width: '100%',
+    maxWidth: 520,
+    alignSelf: 'center',
     fontSize: 14,
-    color: COLORS.primary,
+    color: COLORS.primarySoft,
     textAlign: 'center',
-    fontWeight: '600',
-    marginTop: 8,
+    fontWeight: '800',
+    marginTop: SPACE.lg,
+    paddingVertical: SPACE.sm,
   },
 });

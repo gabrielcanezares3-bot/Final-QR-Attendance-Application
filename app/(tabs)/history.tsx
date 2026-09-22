@@ -1,8 +1,9 @@
+import AmbientBackground from '@/components/AmbientBackground';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 
-import { COLORS } from '@/constants/colors';
+import { COLORS, RADIUS, SPACE } from '@/constants/colors';
 import { useAuth } from '@/lib/auth';
 import {
   getAttendanceHistory,
@@ -53,8 +54,11 @@ export default function HistoryScreen() {
   if (loading) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Attendance History</Text>
-        <Text style={styles.subtitle}>Loading records...</Text>
+        <AmbientBackground />
+        <View style={styles.loadingState}>
+          <ActivityIndicator size="small" color={COLORS.primary} />
+          <Text style={styles.subtitle}>Loading records...</Text>
+        </View>
       </View>
     );
   }
@@ -62,120 +66,172 @@ export default function HistoryScreen() {
   if (role === 'teacher') {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Attendance History</Text>
+        <AmbientBackground />
+        <View style={styles.content}>
+          <Text style={styles.title}>Attendance History</Text>
 
-        {teacherEvents.length === 0 ? (
-          <Text style={styles.subtitle}>
-            No events yet. Create an event from the Teacher tab.
-          </Text>
-        ) : (
-          <FlatList
-            data={teacherEvents}
-            keyExtractor={(item) => item.eventId}
-            contentContainerStyle={styles.list}
-            renderItem={({ item }) => (
-              <View style={styles.card}>
-                <View style={styles.eventHeader}>
-                  <Text style={styles.eventTitle}>{item.title}</Text>
-                  <View style={styles.countBadge}>
-                    <Text style={styles.countText}>{item.attendeeCount}</Text>
+          {teacherEvents.length === 0 ? (
+            <EmptyState>
+              No events yet. Create an event from the Teacher tab.
+            </EmptyState>
+          ) : (
+            <FlatList
+              data={teacherEvents}
+              keyExtractor={(item) => item.eventId}
+              contentContainerStyle={styles.list}
+              style={styles.listFrame}
+              showsVerticalScrollIndicator={false}
+              renderItem={({ item }) => (
+                <View style={styles.card}>
+                  <View style={styles.eventHeader}>
+                    <Text style={styles.eventTitle}>{item.title}</Text>
+                    <View style={styles.countBadge}>
+                      <Text style={styles.countText}>{item.attendeeCount}</Text>
+                    </View>
                   </View>
+
+                  <Text style={styles.eventMeta}>{item.eventCode}</Text>
+
+                  {item.startTime && (
+                    <Text style={styles.eventMeta}>{formatDate(item.startTime)}</Text>
+                  )}
+
+                  {item.attendees.length === 0 ? (
+                    <Text style={styles.attendeeEmpty}>No attendees yet.</Text>
+                  ) : (
+                    <View style={styles.attendeeList}>
+                      {item.attendees.map((attendee) => (
+                        <View key={attendee.studentId} style={styles.attendeeRow}>
+                          <Text style={styles.attendeeName}>
+                            {attendee.studentName || shortId(attendee.studentId)}
+                          </Text>
+                          <Text style={styles.eventMeta}>
+                            {formatDate(attendee.scannedAt)}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
                 </View>
-
-                <Text style={styles.eventMeta}>{item.eventCode}</Text>
-
-                {item.startTime && (
-                  <Text style={styles.eventMeta}>{formatDate(item.startTime)}</Text>
-                )}
-
-                {item.attendees.length === 0 ? (
-                  <Text style={styles.attendeeEmpty}>No attendees yet.</Text>
-                ) : (
-                  <View style={styles.attendeeList}>
-                    {item.attendees.map((attendee) => (
-                      <View key={attendee.studentId} style={styles.attendeeRow}>
-                        <Text style={styles.attendeeName}>
-                          {attendee.studentName || shortId(attendee.studentId)}
-                        </Text>
-                        <Text style={styles.eventMeta}>
-                          {formatDate(attendee.scannedAt)}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
-              </View>
-            )}
-          />
-        )}
+              )}
+            />
+          )}
+        </View>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Attendance History</Text>
+      <AmbientBackground />
+      <View style={styles.content}>
+        <Text style={styles.title}>Attendance History</Text>
 
-      {studentRecords.length === 0 ? (
-        <Text style={styles.subtitle}>
-          No records yet. Scan a QR code to register your attendance.
-        </Text>
-      ) : (
-        <FlatList
-          data={studentRecords}
-          keyExtractor={(item) => String(item.id)}
-          contentContainerStyle={styles.list}
-          renderItem={({ item }) => (
-            <View style={styles.card}>
-              <Text style={styles.eventTitle}>{item.eventTitle}</Text>
-              <Text style={styles.eventMeta}>{item.eventId}</Text>
-              <Text style={styles.eventMeta}>{formatDate(item.scannedAt)}</Text>
-            </View>
-          )}
-        />
-      )}
+        {studentRecords.length === 0 ? (
+          <EmptyState>
+            No records yet. Scan a QR code to register your attendance.
+          </EmptyState>
+        ) : (
+          <FlatList
+            data={studentRecords}
+            keyExtractor={(item) => String(item.id)}
+            contentContainerStyle={styles.list}
+            style={styles.listFrame}
+            showsVerticalScrollIndicator={false}
+            renderItem={({ item }) => (
+              <View style={styles.card}>
+                <Text style={styles.eventTitle}>{item.eventTitle}</Text>
+                <Text style={styles.eventMeta}>{item.eventId}</Text>
+                <Text style={styles.eventMeta}>{formatDate(item.scannedAt)}</Text>
+              </View>
+            )}
+          />
+        )}
+      </View>
     </View>
   );
 }
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleString();
+function formatDate(value: string | null | undefined): string {
+  if (!value) {
+    return 'Date unavailable';
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return 'Date unavailable';
+  }
+
+  return date.toLocaleString();
 }
 
-function shortId(id: string) {
-  return id ? `\u2026${id.slice(-8)}` : 'unknown';
+function shortId(value: string | null | undefined): string {
+  if (!value) {
+    return 'Unknown student';
+  }
+
+  if (value.length <= 12) {
+    return value;
+  }
+
+  return `${value.slice(0, 6)}...${value.slice(-4)}`;
+}
+
+function EmptyState({ children }: { children: string }) {
+  return (
+    <View style={styles.emptyState}>
+      <View style={styles.emptyIcon}>
+        <Text style={styles.emptyIconText}>—</Text>
+      </View>
+      <Text style={styles.emptyText}>{children}</Text>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-    paddingHorizontal: 24,
-    paddingTop: 24,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: SPACE.lg,
+    paddingTop: SPACE.lg,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 27,
+    fontWeight: '800',
     color: COLORS.textPrimary,
-    marginBottom: 16,
+    marginBottom: SPACE.lg,
+    letterSpacing: -0.4,
+  },
+  loadingState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: SPACE.xl,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 15,
     color: COLORS.textSecondary,
-    textAlign: 'center',
-    lineHeight: 20,
-    marginTop: 32,
+    lineHeight: 22,
+    marginTop: SPACE.sm,
+  },
+  listFrame: {
+    flex: 1,
   },
   list: {
-    paddingBottom: 24,
+    paddingBottom: SPACE.xl,
   },
   card: {
-    backgroundColor: COLORS.card,
-    borderRadius: 10,
+    backgroundColor: COLORS.glassStrong,
+    borderRadius: RADIUS.lg,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 16,
-    marginBottom: 12,
+    borderColor: COLORS.glassBorder,
+    padding: SPACE.lg,
+    marginBottom: SPACE.md,
+    elevation: 3,
   },
   eventHeader: {
     flexDirection: 'row',
@@ -183,45 +239,80 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   eventTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '800',
     color: COLORS.textPrimary,
-    marginBottom: 4,
+    marginBottom: SPACE.xs,
     flex: 1,
   },
   eventMeta: {
     fontSize: 13,
     color: COLORS.textSecondary,
-    marginTop: 2,
+    marginTop: 3,
+    lineHeight: 18,
   },
   countBadge: {
-    backgroundColor: COLORS.surface,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-    marginLeft: 12,
+    backgroundColor: 'rgba(109,59,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(109,59,255,0.16)',
+    paddingHorizontal: SPACE.sm,
+    minHeight: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: RADIUS.pill,
+    marginLeft: SPACE.sm,
   },
   countText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.primary,
+    fontWeight: '800',
+    color: COLORS.accentSoft,
   },
   attendeeList: {
-    marginTop: 12,
+    marginTop: SPACE.md,
   },
   attendeeRow: {
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    paddingVertical: 10,
+    borderTopColor: 'rgba(151,204,255,0.10)',
+    paddingVertical: SPACE.sm,
   },
   attendeeName: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
     color: COLORS.textPrimary,
   },
   attendeeEmpty: {
     fontSize: 13,
     color: COLORS.textSecondary,
-    marginTop: 12,
+    marginTop: SPACE.md,
+  },
+  emptyState: {
+    padding: SPACE.xl,
+    borderRadius: RADIUS.lg,
+    backgroundColor: COLORS.glass,
+    borderWidth: 1,
+    borderColor: COLORS.glassBorder,
+    alignItems: 'center',
+  },
+  emptyIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: RADIUS.pill,
+    backgroundColor: COLORS.primaryTint,
+    borderWidth: 1,
+    borderColor: 'rgba(109,59,255,0.16)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACE.md,
+  },
+  emptyIconText: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: COLORS.primarySoft,
+  },
+  emptyText: {
+    fontSize: 15,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
   },
 });

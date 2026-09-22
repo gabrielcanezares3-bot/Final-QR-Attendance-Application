@@ -46,21 +46,36 @@ export async function registerAttendance(
   } else {
     const { data: newEvent, error: insertError } = await supabase
       .from('events')
-      .insert([
+      .upsert(
         {
           event_code: payload.event,
           title,
           start_time: payload.start ?? null,
           end_time: payload.end ?? null,
         },
-      ])
+        { onConflict: 'event_code' }
+      )
       .select('id, title')
       .single();
 
     if (insertError) {
-      return { success: false, message: 'Could not create event.' };
+      if (insertError.code === '23505') {
+        const existing = await getEventByCode(payload.event);
+        if (existing) {
+          event = existing;
+        } else {
+          return { success: false, message: 'Could not create event.' };
+        }
+      } else {
+        return { success: false, message: 'Could not create event.' };
+      }
+    } else {
+      event = newEvent;
     }
-    event = newEvent;
+  }
+
+  if (!event) {
+    return { success: false, message: 'Could not resolve event.' };
   }
 
   const { error: attError } = await supabase.from('attendance').insert([

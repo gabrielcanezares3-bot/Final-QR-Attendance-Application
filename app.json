@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "QR-ATT",
-    "slug": "qr-app",
+    "name": "GCScan",
+    "slug": "qr-attendance",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -18,7 +18,11 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.debdeb3.qratt"
+      "package": "com.gabzzz.xiii.qratt",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "output": "static",
@@ -37,17 +41,18 @@
       ],
       "expo-sqlite",
       "@react-native-community/datetimepicker",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-camera"
     ],
     "experiments": {
-      "reactCompiler": true
+      "reactCompiler": false
     },
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "1a09fab2-f203-4e0a-9c61-dd1ec09bf26e"
+        "projectId": "4f4ba774-d753-4766-8c23-9b5f80b14668"
       }
     },
-    "owner": "debdeb3"
+    "owner": "gabzzz.xiii"
   }
 }
